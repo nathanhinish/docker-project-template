@@ -1,0 +1,39 @@
+image:
+  name: atlassian/default-image:2
+
+definitions:
+  test: &test
+    - step:
+        name: Test
+        script:
+          - npm install -g bats
+          - chmod a+x test/*.bats
+          - bats test/test.bats
+        services:
+          - docker
+  push: &push
+    - step:
+        name: Push and Tag
+        image: python:3.7
+        deployment: production
+        services:
+          - docker
+        caches:
+          - docker
+        script:
+          - pipe: docker://bitbucketpipelines/bitbucket-pipe-release:3.0.0
+            variables:
+              DOCKERHUB_USERNAME: $DOCKERHUB_USERNAME
+              DOCKERHUB_PASSWORD: $DOCKERHUB_PASSWORD
+              IMAGE: $DOCKER_IMAGE_NAME
+              GIT_PUSH: "true"
+              TAG: "true"
+              CHANGELOG: "true"
+
+pipelines:
+  # default:
+  #   - <<: *test
+  branches:
+    master:
+      # - <<: *test
+      - <<: *push
